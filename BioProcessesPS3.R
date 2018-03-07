@@ -28,10 +28,10 @@ fun = 1+(b*theta_array)
 term1 = 1+((1-fd_o)*(b*theta_array)/(fun))
 term2 = S_o - ((K*fun)/((Y*q_hat*theta_array)-(fun)))
 combo = Q*(Xi_o + (Y*term1*term2))
-Qw_Xvw_kgperd = combo / 100000 # kg VSS/day
+Qw_Xvw_kgperd = combo / 1000000 # kg VSS/day
 
 Qw_Xaw_mgperd = fd*Q*Y*(1/(1+btheta))*(S_o - K*(1+btheta)/(Y*q_hat*theta_array - (1+btheta)))
-Qw_Xaw_kgperd = Qw_Xaw_mgperd / 100000 # kg VSS/day
+Qw_Xaw_kgperd = Qw_Xaw_mgperd / 1000000 # kg VSS/day
 
 
 plot(theta_array, Qw_Xvw_kgperd, xlab = "theta (days)", ylab = "biomass wasted (kg/day)", main = "kg biomass wasted per day as a function of solids retention time")
