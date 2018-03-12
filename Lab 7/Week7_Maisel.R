@@ -19,16 +19,16 @@ MetData$Tavg_C = (MetData$Tmax_C + MetData$Tmin_C)/2
 #Step 3: Run snowmelt model with default parameters
 lat_deg_Ith = 42.44 #decimal degrees
 lat_rad_Ith<-lat_deg_Ith*pi/180 ## latitude in radians
+SnowMelt = SnowMelt(MetData$Date, MetData$Precip_mm, MetData$Tmax_C, MetData$Tmin_C, lat_rad_Ith)
 
 #Step 4: Hydrologic watershed model input = precipitation as rain (mm) + snowmelt (mm)
-SnowMelt = SnowMelt(MetData$Date, MetData$Precip_mm, MetData$Tmax_C, MetData$Tmin_C, lat_rad_Ith)
 SnowMelt$Precip_eff_mm = SnowMelt$Rain_mm + SnowMelt$SnowMelt_mm # this takes the precip as rain and the snowmelt to find the 
                                                                 # effective precipitation as water on land
 
 #Step5: Run Lumped VSA model
 #?Lumped_VSA_Mmodel 
 Lumped_VSA_Model <- Lumped_VSA_model(dateSeries = SnowMelt$Date, 	P = SnowMelt$Precip_eff_mm, 
-                            Tmax=SnowMelt$MaxT_C, Tmin = SnowMelt$MinT_C, latitudeDegrees = lat_deg_Ith, 
+                            Tmax = SnowMelt$MaxT_C, Tmin = SnowMelt$MinT_C, latitudeDegrees = lat_deg_Ith, 
                             Tp = 5, Depth = 2010, SATper = 0.27, AWCper = 0.13, StartCond = "wet")
 
 # Tp: time to peak is how quickly water is turned to runoff
@@ -45,7 +45,6 @@ plot(Five_LVSAM$Date, Five_SnowMelt$SnowWaterEq_mm, type = "l", ylab = "SWE (mm)
 plot(Five_LVSAM$Date,Five_LVSAM$SoilWater, type = "l", ylab = "Soil Moisture, AET")
 plot(Five_LVSAM$Date,Five_LVSAM$Se, type = "l", ylab = "Groundwater Storage (Se)")
 plot(Five_LVSAM$Date,Five_LVSAM$totQ, type = "l", ylab = "Streamflow")
-
 
 #Discussion questions
 # - We are chaining together different models with different assumptions and therefore error, do water balance errors tend to grow without bounds? Why or why not?
@@ -120,6 +119,7 @@ for (i in 1:n_runs)
 }
 
 par(mfrow=c(2,3))
+par(mar=c(2.5,2.5,2.5,2.5))
 plot(Results$windSp_mps, Results$modeled_flow_mm, xlab = "Wind speed (m/s)", ylab = "Runoff (mm)")
 plot(Results$forest_cover, Results$modeled_flow_mm, xlab = "Forest cover", ylab = "Runoff (mm)")
 plot(Results$Ia, Results$modeled_flow_mm, xlab = "Initial abstraction", ylab = "Runoff (mm)")
@@ -128,3 +128,36 @@ plot(Results$PI_percent, Results$modeled_flow_mm, xlab = "Percent Impervious", y
 
 #Step 8: Compute Nash Sutcliffe Model Efficiency
 
+# Prepare the data for analysis
+# Get data for Fall Creek to use as "observed" values
+FC_obs = get_usgs_gage(flowgage_id = "04234000", begin_date = "1950-01-01", end_date="2016-12-31")
+area_FC = FC_obs$area #km^2
+
+# make a new dataframe that only has date and flow
+NS_FC_obs = data.frame(matrix(nrow = length(FC_obs$flowdata$flow), ncol = 0))
+NS_FC_obs$Date = FC_obs$flowdata$date
+# flow is given in cubic meters per day, so we convert to mm/day
+NS_FC_obs$flowrate_mmperd = FC_obs$flowdata$flow/area_FC/(1000)
+
+
+# Use VSA model with default inputs for "simulated" values
+FC_sim <- Lumped_VSA_model(dateSeries = SnowMelt$Date, 	P = SnowMelt$Precip_eff_mm, 
+                           Tmax = SnowMelt$MaxT_C, Tmin = SnowMelt$MinT_C, latitudeDegrees = lat_deg_Ith, Tp = 5, Depth = 2010, 
+                            SATper = 0.27, AWCper = 0.13, StartCond = "wet")
+
+# make a new dataframe that only has date and flow
+NS_FC_sim = data.frame(matrix(nrow = length(FC_sim$totQ), ncol = 0))
+NS_FC_sim$Date = FC_sim$Date
+NS_FC_sim$flowrate_mmperd = FC_sim$totQ
+
+# Need to make sure that the values are on the same timestep
+#total <- merge(NS_FC_obs, NS_FC_sim, by="Date")
+
+# Compute the Model Efficiency
+# NSE = 1- (sum((observed - simulated)^2))/(sum((observed - mean(observed))^2)), (negative infinity, 1)
+
+NSE_num = sum((NS_FC_obs$flowrate_mmperd - NS_FC_sim$flowrate_mmperd)^2)
+NSE_denom = sum((NS_FC_obs$flowrate_mmperd - mean(NS_FC_obs$flowrate_mmperd)^2))              
+
+# This is incorrect because the inputs gives an NSE of 8 but the upper limit is 1              
+NSE = 1 - NSE_num/NSE_denom
