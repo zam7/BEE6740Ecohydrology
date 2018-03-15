@@ -128,36 +128,21 @@ plot(Results$PI_percent, Results$modeled_flow_mm, xlab = "Percent Impervious", y
 
 #Step 8: Compute Nash Sutcliffe Model Efficiency
 
-# Prepare the data for analysis
 # Get data for Fall Creek to use as "observed" values
-FC_obs = get_usgs_gage(flowgage_id = "04234000", begin_date = "1950-01-01", end_date="2016-12-31")
-area_FC = FC_obs$area #km^2
-
-# make a new dataframe that only has date and flow
-NS_FC_obs = data.frame(matrix(nrow = length(FC_obs$flowdata$flow), ncol = 0))
-NS_FC_obs$Date = FC_obs$flowdata$date
-# flow is given in cubic meters per day, so we convert to mm/day
-NS_FC_obs$flowrate_mmperd = FC_obs$flowdata$flow/area_FC/(1000)
-
+NS_FC_obs = get_usgs_gage(flowgage_id = "04234000", begin_date = "1950-01-01", end_date="2016-12-31")
+NS_FC_obs$flowrate_mmperd = NS_FC_obs$flowdata$flow / (NS_FC_obs$area*1000) # flow is given in cubic meters per day, so we convert to mm/day
 
 # Use VSA model with default inputs for "simulated" values
-FC_sim <- Lumped_VSA_model(dateSeries = SnowMelt$Date, 	P = SnowMelt$Precip_eff_mm, 
-                           Tmax = SnowMelt$MaxT_C, Tmin = SnowMelt$MinT_C, latitudeDegrees = lat_deg_Ith, Tp = 5, Depth = 2010, 
-                            SATper = 0.27, AWCper = 0.13, StartCond = "wet")
+NS_FC_sim <- Lumped_VSA_Model
 
-# make a new dataframe that only has date and flow
-NS_FC_sim = data.frame(matrix(nrow = length(FC_sim$totQ), ncol = 0))
-NS_FC_sim$Date = FC_sim$Date
-NS_FC_sim$flowrate_mmperd = FC_sim$totQ
+# Create an empty matrix to be populated with values for NSE equation
+AllData = data.frame(matrix(nrow = 24472, ncol = 0))
 
-# Need to make sure that the values are on the same timestep
-#total <- merge(NS_FC_obs, NS_FC_sim, by="Date")
+AllData$sim_obs = NS_FC_sim$modeled_flow - NS_FC_obs$flowrate_mmperd
+NSE_numerator = sum(AllData$sim_obs * AllData$sim_obs)
+AllData$obs_obs = NS_FC_obs$flowrate_mmperd - mean(NS_FC_obs$flowrate_mmperd)
+NSE_denom = sum(AllData$obs_obs * AllData$obs_obs)
 
-# Compute the Model Efficiency
-# NSE = 1- (sum((observed - simulated)^2))/(sum((observed - mean(observed))^2)), (negative infinity, 1)
+NSE = 1 - (NSE_numerator/NSE_denom)
+# result is NSE = 0.5234
 
-NSE_num = sum((NS_FC_obs$flowrate_mmperd - NS_FC_sim$flowrate_mmperd)^2)
-NSE_denom = sum((NS_FC_obs$flowrate_mmperd - mean(NS_FC_obs$flowrate_mmperd)^2))              
-
-# This is incorrect because the inputs gives an NSE of 8 but the upper limit is 1              
-NSE = 1 - NSE_num/NSE_denom
