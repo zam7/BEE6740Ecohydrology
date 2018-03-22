@@ -16,40 +16,48 @@ probPeturb<-function(x, numIter){
 
 # Load "EcoHydRology" Package
 library(EcoHydRology)
+library(lubridate)
 
 #Step 1: Choose a USGS gage, go to NCDC data online and find daily precipitation, daily minimum temperature, and daily maximum temperature for a watershed
 #Make sure you have at least 10 continuous years of data
 #Check the NCDC met data for gaps, Precip = flag, TMAX < TMIN, etc.
 #You can use Fall Creek to get this working, but then for your assignment pick a different watershed
 
-# 1. Fall Creek, Ithaca, NY: "04234000"
-# 2. Little Sioux River, Linn Gorge, IA: "06605850"
-# 3. White Salmon River, Underwood, WA: "14123500"
-# 4. White Oak Creek, Georgetown, OH: "03238500"
-# 5. Pantano Wash, Vail, AZ: "09484600"
+MetData <- read.csv("AlbuquerquePrecipTempData.csv")
+MetData$Precip_mm = MetData$PRCP*25.4
+MetData$Tmax_C = 5/9*(MetData$TMAX-32)
+MetData$Tmin_C = 5/9*(MetData$TMIN-32)
+y = MetData$DATE
+MetData$Date_mdy = mdy(y)
+MetData$Year = year(MetData$Date_mdy)
 
-MetData <- read.csv("GameFarmRd_1950-present.csv")
-MetData$Precip_mm = MetData$Precip*25.4
-MetData$Tmax_C = 5/9*(MetData$Tmax-32)
-MetData$Tmin_C = 5/9*(MetData$Tmin-32)
-MetData$Date = as.Date(ISOdate(MetData$Year, MetData$Month, MetData$Day))
+# make sure that the years are in the correct century
+for (i in 1:nrow(MetData))
+{
+   if (MetData$Year[i] > 2016)
+  {
+    MetData$Year[i] = MetData$Year[i] - 100
+   }
+}
+
 MetData$Tavg_C = (MetData$Tmax_C + MetData$Tmin_C)/2
 
-latitudeDegrees = 42.44 #decimal degrees
+latitudeDegrees = 35.0844 #decimal degrees
 latitudeRadians<-latitudeDegrees*pi/180 ## latitude in radians
 
 #Step 2: Remove all data except the one recent decade
 MetData <- MetData[which(MetData$Year > 1999 & MetData$Year < 2010),]
 
-#Step 3: Get USGS gage data for your watershed
-#Again, don't use fall creek, replace with your watershed
-FC <- get_usgs_gage(flowgage_id = "04234000", begin_date = "2000-01-01", end_date="2009-12-31")
-FC$flowdata$flow  = FC$flowdata$flow / (FC$area*1000)
+# Download USGS streamflow data for Rio Grande, Albuquerque, NM 
+# https://waterdata.usgs.gov/nwis/uv?site_no=08330000
+# Albuquerque, New Mexico: "08330000"
+RG <- get_usgs_gage(flowgage_id = "08330000", begin_date = "2000-01-01", end_date="2009-12-31")
+RG$flowdata$flow  = RG$flowdata$flow / (RG$area*1000)
 
 #This is the DDS Algorithm, I've coded it in full here to save us some time, Please read through it down to Step 4
   
   # Define Calibration Parameters and Feasible Parameter Ranges
-  xBounds.df = data.frame(matrix(ncol=2,nrow=7))
+  xBounds.df = data.frame(matrix(ncol=2,nrow=8))
   colnames(xBounds.df)<-c("min", "max")
 
   #forest
@@ -58,15 +66,15 @@ FC$flowdata$flow  = FC$flowdata$flow / (FC$area*1000)
   
   #Tp
   xBounds.df$min[2] = 1
-  xBounds.df$max[2] = 10
+  xBounds.df$max[2] = 100 # this is a large watershed so it takes longer for water to reach the stream to peak
 
   #PETcap
   xBounds.df$min[3] = 4
   xBounds.df$max[3] = 6
   
-  #rec_coef
-  xBounds.df$min[4] = 0.01
-  xBounds.df$max[4] = 0.2
+  #rec_coef, bigger watershed cannot respond as quickly so everything decreases
+  xBounds.df$min[4] = 0.001
+  xBounds.df$max[4] = 0.1
     
   #Se_min
   xBounds.df$min[5] = 50
@@ -80,9 +88,14 @@ FC$flowdata$flow  = FC$flowdata$flow / (FC$area*1000)
   xBounds.df$min[7] = 0.05
   xBounds.df$max[7] = 0.2
   
+  #Perct_Imp
+  xBounds.df$min[8] = 0
+  xBounds.df$max[8] = 0.5
+  
+  
   # Generate initial first guess
   #xBounds.df<-data.frame(col1 = rep(10,10), col2=rep(100, 10))
-  x_init<-c(0.1, 1, 4, 0.01, 50, 1, 0.05)
+  x_init<-c(0.1, 1, 4, 0.01, 50, 1, 0.05, 0)
   x_best = data.frame(x_init)
 
   # Evaluate first cost function
@@ -138,13 +151,16 @@ FC$flowdata$flow  = FC$flowdata$flow / (FC$area*1000)
     
     ModelPrecip = snowmelt$SnowMelt_mm+snowmelt$Rain_mm
     
+    # Data found for Albuquerque New Mexico
+    # https://geospatial.wvu.edu/files/d/f3ed7011-e1f5-45e9-87e0-9ac9cbe68322/nm.pdf to find AWC --> 6 inches
+    
     Results <- Lumped_VSA_model(dateSeries = MetData$Date, P = ModelPrecip, Tmax=MetData$Tmax_C, Tmin = MetData$Tmin_C, latitudeDegrees=latitudeDegrees, 
-                                Depth = 1500, SATper = 0.5, AWCper = 0.17, Tp = x_test[2], StartCond = "avg", BF1 = 1, 
-                                albedo=0.3, PETcap = x_test[3], rec_coef = x_test[4], Se_min = x_test[5], C1 = x_test[6], Ia_coef = x_test[7])
+                                Depth = 1500, SATper = 0.5, AWCper = .02, Tp = x_test[2], StartCond = "avg", BF1 = 1, 
+                                albedo=0.3, PETcap = x_test[3], rec_coef = x_test[4], Se_min = x_test[5], C1 = x_test[6], Ia_coef = x_test[7], percentImpervious = x_test[8])
 
     Results$mdate = Results$Date
     #Step X: Merge modeled flow with observed flow
-    AllData = merge(Results, FC$flowdata, by="mdate")
+    AllData = merge(Results, RG$flowdata, by="mdate")
     
     
     #Calculate NSE
@@ -181,31 +197,37 @@ FC$flowdata$flow  = FC$flowdata$flow / (FC$area*1000)
   
   # This is the "globally best" model that we want to plot vs. the observed data
   Globally_Best <- Lumped_VSA_model(dateSeries = MetData$Date, P = ModelPrecip_Best, Tmax=MetData$Tmax_C, Tmin = MetData$Tmin_C, latitudeDegrees=latitudeDegrees, 
-                              Depth = 1500, SATper = 0.5, AWCper = 0.17, Tp = x_best[2], StartCond = "avg", BF1 = 1, 
-                              albedo=0.3, PETcap = x_best[3], rec_coef = x_best[4], Se_min = x_best[5], C1 = x_best[6], Ia_coef = x_best[7])
+                              Depth = 1500, SATper = 0.5, AWCper = 0.02, Tp = x_best[2], StartCond = "avg", BF1 = 1, 
+                              albedo=0.3, PETcap = x_best[3], rec_coef = x_best[4], Se_min = x_best[5], C1 = x_best[6], Ia_coef = x_best[7], percentImpervious = x_best[8])
   
   Globally_Best$mdate = Globally_Best$Date
   # Merge modeled flow with observed flow
-  BestAllData = merge(Globally_Best, FC$flowdata, by="mdate")
+  BestAllData = merge(Globally_Best, RG$flowdata, by="mdate")
   
-  plot(BestAllData$Date, BestAllData$flow, main = "Globally Best Model and observed data for Fall Creek flow", ylab = "Flow (mm/day)", xlab = "Date")
+  plot(BestAllData$Date, BestAllData$flow, main = "Globally Best Model and observed data for Rio Grande flow", ylab = "Flow (mm/day)", xlab = "Date")
   lines(BestAllData$Date,BestAllData$modeled_flow,  col = "red")
   
 #Plot the simulated and observed data on a semilog y axis. What are the implications of this model structure for low stream flows?
 #Hint: plot(x,y,....,log="y")
 
-  plot(BestAllData$Date, BestAllData$modeled_flow,  col = "red", log="y", main = "Globally Best Model and observed data for Fall Creek flow", ylab = "Flow (mm/day)", xlab = "Date")
+  plot(BestAllData$Date, BestAllData$modeled_flow,  col = "red", log="y", main = "Globally Best Model and observed data for Rio Grande flow", ylab = "Log of Flow (mm/day)", xlab = "Date")
   lines(BestAllData$Date, BestAllData$flow, log="y")
   
 #Step 6: Plot state variables (ET, SWE, Soil Moisture, Streamflow)
-par(mfrow=c(5,1))
+par(mfrow=c(6,1))
 par(mar=c(2.5,5,1.5,1.5))
-plot(snowmelt$Precip_mm,ylab="Precip (mm)",pch=16)
-plot(snowmelt$SnowWaterEq_mm,ylab="SWE (mm)",pch=16)
-plot(Results$ET,ylab="ET (mm)",pch=16)
-plot(Results$SoilWater,ylab="Soil Water (mm)",pch=16)
-plot(Results$modeled_flow,ylab="Discharge (mm)",pch=16)
+plot(BestAllData$Date, snowmelt$Precip_mm,xlab = 'Date',ylab="Precip (mm)",pch=16)
+plot(BestAllData$Date, snowmelt$SnowWaterEq_mm, xlab = 'Date', ylab="SWE (mm)",pch=16)
+plot(BestAllData$Date, BestAllData$ET,xlab = 'Date',ylab="ET (mm)",pch=16)
+plot(BestAllData$Date, BestAllData$SoilWater,xlab = 'Date',ylab="Soil Water (mm)",pch=16)
+plot(BestAllData$Date, BestAllData$modeled_flow,xlab = 'Date',ylab="Modeled Discharge (mm)",pch=16)
+plot(BestAllData$Date, RG$flowdata$flow, xlab = 'Date', ylab="Observed Discharge (mm)",pch=16)
 
 #Let's compare differences in state variables and model parameters across all of our watersheds
 
 #What inferences can we make about ecohydrology with a model and a calibration algorithm?
+
+# This model does not work for this watershed for a few reasons
+# 1. The Rio Grande is a highly controlled river, so the observed flow that we get is not actually the natural flow. 
+# Any model that we try to compare to the observed flow will not make sense because the observed flow is not a result of the hydrologic cycles.
+# 2. The model was modified to consider the sandy soil and small soil depth for NM (as compared with NY)

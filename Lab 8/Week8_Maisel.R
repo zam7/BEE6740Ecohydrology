@@ -194,7 +194,7 @@ FC$flowdata$flow  = FC$flowdata$flow / (FC$area*1000)
 #Plot the simulated and observed data on a semilog y axis. What are the implications of this model structure for low stream flows?
 #Hint: plot(x,y,....,log="y")
 
-  plot(BestAllData$Date, BestAllData$modeled_flow,  col = "red", log="y", main = "Globally Best Model and observed data for Fall Creek flow", ylab = "Flow (mm/day)", xlab = "Date")
+  plot(BestAllData$Date, BestAllData$modeled_flow,  col = "red", log="y", main = "Globally Best Model and observed data for Fall Creek flow", ylab = "Log of Flow (mm/day)", xlab = "Date")
   lines(BestAllData$Date, BestAllData$flow, log="y")
   
 #Step 6: Plot state variables (ET, SWE, Soil Moisture, Streamflow)
