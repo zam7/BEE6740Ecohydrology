@@ -151,8 +151,7 @@ RG$flowdata$flow  = RG$flowdata$flow / (RG$area*1000)
     
     ModelPrecip = snowmelt$SnowMelt_mm+snowmelt$Rain_mm
     
-    # Data found for Albuquerque New Mexico
-    # https://geospatial.wvu.edu/files/d/f3ed7011-e1f5-45e9-87e0-9ac9cbe68322/nm.pdf to find AWC --> 6 inches
+    # The AWCper was changed to 0.02 based on the 
     
     Results <- Lumped_VSA_model(dateSeries = MetData$Date, P = ModelPrecip, Tmax=MetData$Tmax_C, Tmin = MetData$Tmin_C, latitudeDegrees=latitudeDegrees, 
                                 Depth = 1500, SATper = 0.5, AWCper = .02, Tp = x_test[2], StartCond = "avg", BF1 = 1, 
@@ -206,12 +205,20 @@ RG$flowdata$flow  = RG$flowdata$flow / (RG$area*1000)
   
   plot(BestAllData$Date, BestAllData$flow, main = "Globally Best Model and observed data for Rio Grande flow", ylab = "Flow (mm/day)", xlab = "Date")
   lines(BestAllData$Date,BestAllData$modeled_flow,  col = "red")
+  legend( x= "topright", 
+          legend=c("Observed Flow","Modeled Flow"), 
+          col=c("black","red"),
+          pch=c(21, 21), cex = 0.5)
   
 #Plot the simulated and observed data on a semilog y axis. What are the implications of this model structure for low stream flows?
 #Hint: plot(x,y,....,log="y")
 
   plot(BestAllData$Date, BestAllData$modeled_flow,  col = "red", log="y", main = "Globally Best Model and observed data for Rio Grande flow", ylab = "Log of Flow (mm/day)", xlab = "Date")
   lines(BestAllData$Date, BestAllData$flow, log="y")
+  legend( x= "topright", 
+          legend=c("Observed Flow","Modeled Flow"), 
+          col=c("black","red"),
+          pch=c(21, 21), cex = 0.5)
   
 #Step 6: Plot state variables (ET, SWE, Soil Moisture, Streamflow)
 par(mfrow=c(6,1))
@@ -230,4 +237,5 @@ plot(BestAllData$Date, RG$flowdata$flow, xlab = 'Date', ylab="Observed Discharge
 # This model does not work for this watershed for a few reasons
 # 1. The Rio Grande is a highly controlled river, so the observed flow that we get is not actually the natural flow. 
 # Any model that we try to compare to the observed flow will not make sense because the observed flow is not a result of the hydrologic cycles.
-# 2. The model was modified to consider the sandy soil and small soil depth for NM (as compared with NY)
+# 2. This is a highly urbanized watershed, but we tried to account for that by adding the percent impervious parameter 
+# 3. The model was modified to consider the sandy soil and small soil depth for NM (as compared with NY)
