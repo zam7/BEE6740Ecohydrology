@@ -1,10 +1,12 @@
 # Ecohydrology 2018
 # In Class Assignment 9
+# Zoe Maisel
 
 setwd("~/github/Ecohydrology_Modeling")
 
 # Load "EcoHydRology" Package
 library(EcoHydRology)
+library(lubridate)
 
 #Step 1: Read in all 5 climate datasets (already in SI units) and convert date to appropriate format
 #NEX-GDDP (https://nex.nasa.gov/nex/projects/1356/)
@@ -149,17 +151,70 @@ Results_GFDL <- Lumped_VSA_model(dateSeries = GFDL$Date, P = snowmelt_GFDL$SnowM
 
   # assumes no change in land use, assumes that plant population remains the same, that more prcip falls during winter and leaves as runoff, that land use and population stays the same
   # the model is calibrated to historical conditions which means that it might not be able to be applied to future times (tune parameters to different conditions and see how well it does)
+
+# Make a column of years in the snowmelt datafiles for all the models
+snowmelt_Access$Year = year(snowmelt_Access$Date)
+snowmelt_bcc$Year = year(snowmelt_bcc$Date)
+snowmelt_BNU$Year = year(snowmelt_BNU$Date)
+snowmelt_CanESM$Year = year(snowmelt_CanESM$Date)
+snowmelt_GFDL$Year = year(snowmelt_GFDL$Date)
+
+Results_Access$Year = year(Results_Access$Date)
+Results_bcc$Year = year(Results_bcc$Date)
+Results_BNU$Year = year(Results_BNU$Date)
+Results_CanESM$Year = year(Results_CanESM$Date)
+Results_GFDL$Year = year(Results_GFDL$Date)
   
-# take the average of all of the datasets by day
-  for (i in 1:nrow(snowmelt_Access))
+# Initialize all the matrixes to be populated 
+GCM_Proj_SWE = data.frame(matrix(nrow = (2100-2015), ncol = 6))
+GCM_Proj_Discharge = GCM_Proj_SWE = data.frame(matrix(nrow = (2100-2015), ncol = 6))
+GCM_Proj_SoilWater = data.frame(matrix(nrow = (2100-2015), ncol = 6))
+
+  for (year in 2015:2100)
   {
-    for (j in 2:ncol(snowmelt_Access))
-    {
-      snowmelt_average[i,j] = ((snowmelt_Access[i,j] + snowmelt_bcc[i,j] + snowmelt_BNU[i,j] + snowmelt_CanESM[i,j] + snowmelt_GFDL[i,j])/5)
-    }
+    snowmelt_Access_year = snowmelt_Access[which(snowmelt_Access$Year == year),]
+    snowmelt_bcc_year = snowmelt_bcc[which(snowmelt_bcc$Year == year),]
+    snowmelt_BNU_year = snowmelt_BNU[which(snowmelt_BNU$Year == year),]
+    snowmelt_CanESM_year = snowmelt_CanESM[which(snowmelt_CanESM$Year == year),]
+    snowmelt_GFDL_year = snowmelt_GFDL[which(snowmelt_GFDL$Year == year),]
+    
+    Results_Access_year = Results_Access[which(Results_Access$Year == year),]
+    Results_bcc_year = Results_bcc[which(Results_bcc$Year == year),]
+    Results_BNU_year = Results_BNU[which(Results_BNU$Year == year),]
+    Results_CanESM_year = Results_CanESM[which(Results_CanESM$Year == year),]
+    Results_GFDL_year = Results_GFDL[which(Results_GFDL$Year == year),]
+    
+    names(GCM_Proj_SWE) = c("Access_SWE_mm", "bcc_SWE_mm", "BNU_SWE_mm", "CanESM_SWE_mm", "GFDL_SWE_mm", "Average_SWE_mm")
+    GCM_Proj_SWE[(year-2014),1] = max(snowmelt_Access_year$SnowWaterEq_mm)
+    GCM_Proj_SWE[(year-2014),2] = max(snowmelt_bcc_year$SnowWaterEq_mm)
+    GCM_Proj_SWE[(year-2014),3] = max(snowmelt_BNU_year$SnowWaterEq_mm)
+    GCM_Proj_SWE[(year-2014),4] = max(snowmelt_CanESM_year$SnowWaterEq_mm)
+    GCM_Proj_SWE[(year-2014),5] = max(snowmelt_GFDL_year$SnowWaterEq_mm)
+    GCM_Proj_SWE[(year-2015),6] = mean(max(Access_year$SnowWaterEq_mm),max(bcc_year$SnowWaterEq_mm), 
+                                       max(BNU_year$SnowWaterEq_mm), max(CanESM_year$SnowWaterEq_mm), 
+                                       max(GFDL_year$SnowWaterEq_mm))
+    
+    names(GCM_Proj_Discharge) = c("Access_Discharge_mm", "bcc_Discharge_mm", "BNU_Discharge_mm", "CanESM_Discharge_mm", "GFDL_Discharge_mm", "Average_Discharge_mm")
+    GCM_Proj_Discharge[(year-2014),1] = max(Results_Access_year$modeled_flow)
+    GCM_Proj_Discharge[(year-2014),2] = max(Results_bcc_year$modeled_flow)
+    GCM_Proj_Discharge[(year-2014),3] = max(Results_BNU_year$modeled_flow)
+    GCM_Proj_Discharge[(year-2014),4] = max(Results_CanESM_year$modeled_flow)
+    GCM_Proj_Discharge[(year-2014),5] = max(Results_GFDL_year$modeled_flow)
+    GCM_Proj_Discharge[(year-2015),6] = mean(max(Results_Access_year$modeled_flow),max(Results_bcc_year$modeled_flow), 
+                                             max(Results_BNU_year$modeled_flow), max(Results_CanESM_year$modeled_flow), 
+                                             max(Results_GFDL_year$modeled_flow))
+    
+    names(GCM_Proj_SoilWater) = c("Access_SoilWater_mm", "bcc_SoilWater_mm", "BNU_SoilWater_mm", "CanESM_SoilWater_mm", "GFDL_SoilWater_mm", "Average_SoilWater_mm")
+    GCM_Proj_SoilWater[(year-2014),1] = max(Results_Access_year$SoilWater)
+    GCM_Proj_SoilWater[(year-2014),2] = max(Results_bcc_year$SoilWater)
+    GCM_Proj_SoilWater[(year-2014),3] = max(Results_BNU_year$SoilWater)
+    GCM_Proj_SoilWater[(year-2014),4] = max(Results_CanESM_year$SoilWater)
+    GCM_Proj_SoilWater[(year-2014),5] = max(Results_GFDL_year$SoilWater)
+    GCM_Proj_SoilWater[(year-2015),6] = mean(max(Results_Access_year$SoilWater),max(Results_bcc_year$SoilWater), 
+                                             max(Results_BNU_year$SoilWater), max(Results_CanESM_year$SoilWater), 
+                                             max(Results_GFDL_year$SoilWater))
   }
-  
-  
+
 #Step 6a. Will Ithaca still get snow in the future?
 # - use the model to simulate projections of maximum annual SWE accumulation 
 # - what are the physical / ecological processes that are driving this change?
