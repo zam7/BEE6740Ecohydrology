@@ -149,7 +149,7 @@ Results_GFDL <- Lumped_VSA_model(dateSeries = GFDL$Date, P = snowmelt_GFDL$SnowM
 # Note: Think about the averaging method. Should we average out the met data and run that through the model?
 # Does it make sense to average hydrologic model predictions on each day? GCMs/ESMs are validated seasonally.
 
-  # assumes no change in land use, assumes that plant population remains the same, that more prcip falls during winter and leaves as runoff, that land use and population stays the same
+  # assumes no change in land use, assumes that plant population remains the same, that more precip falls during winter and leaves as runoff, that land use and population stays the same
   # the model is calibrated to historical conditions which means that it might not be able to be applied to future times (tune parameters to different conditions and see how well it does)
 
 # Make a column of years in the snowmelt datafiles for all the models
@@ -169,6 +169,7 @@ Results_GFDL$Year = year(Results_GFDL$Date)
 GCM_Proj_SWE = data.frame(matrix(nrow = (2100-2015), ncol = 6))
 GCM_Proj_Discharge = GCM_Proj_SWE = data.frame(matrix(nrow = (2100-2015), ncol = 6))
 GCM_Proj_SoilWater = data.frame(matrix(nrow = (2100-2015), ncol = 6))
+GCM_Proj_ET = data.frame(matrix(nrow = (2100-2015), ncol = 6))
 
   for (year in 2015:2100)
   {
@@ -184,15 +185,50 @@ GCM_Proj_SoilWater = data.frame(matrix(nrow = (2100-2015), ncol = 6))
     Results_CanESM_year = Results_CanESM[which(Results_CanESM$Year == year),]
     Results_GFDL_year = Results_GFDL[which(Results_GFDL$Year == year),]
     
+    #Step 6a. Will Ithaca still get snow in the future?
+    # - use the model to simulate projections of maximum annual SWE accumulation 
+    # - what are the physical / ecological processes that are driving this change?
+    # - note any limitations or assumptions in our the models that might bias these results
+    
     names(GCM_Proj_SWE) = c("Access_SWE_mm", "bcc_SWE_mm", "BNU_SWE_mm", "CanESM_SWE_mm", "GFDL_SWE_mm", "Average_SWE_mm")
     GCM_Proj_SWE[(year-2014),1] = max(snowmelt_Access_year$SnowWaterEq_mm)
     GCM_Proj_SWE[(year-2014),2] = max(snowmelt_bcc_year$SnowWaterEq_mm)
     GCM_Proj_SWE[(year-2014),3] = max(snowmelt_BNU_year$SnowWaterEq_mm)
     GCM_Proj_SWE[(year-2014),4] = max(snowmelt_CanESM_year$SnowWaterEq_mm)
     GCM_Proj_SWE[(year-2014),5] = max(snowmelt_GFDL_year$SnowWaterEq_mm)
-    GCM_Proj_SWE[(year-2015),6] = mean(max(Access_year$SnowWaterEq_mm),max(bcc_year$SnowWaterEq_mm), 
-                                       max(BNU_year$SnowWaterEq_mm), max(CanESM_year$SnowWaterEq_mm), 
-                                       max(GFDL_year$SnowWaterEq_mm))
+    GCM_Proj_SWE[(year-2015),6] = mean(max(snowmelt_Access_year$SnowWaterEq_mm),max(snowmelt_bcc_year$SnowWaterEq_mm), 
+                                       max(snowmelt_BNU_year$SnowWaterEq_mm), max(snowmelt_CanESM_year$SnowWaterEq_mm), 
+                                       max(snowmelt_GFDL_year$SnowWaterEq_mm))
+    
+    #Step 6b.  Will future droughts be worse for agriculture?
+    # - total number of days per year with soil moisture below 180 mm (plant water stress)
+    # - what are the physical / ecological processes that are driving this change?
+    # - note any limitations or assumptions in our the models that might bias these results
+    
+    # names(GCM_Proj_SoilWater) = c("Access_SoilWater_mm", "bcc_SoilWater_mm", "BNU_SoilWater_mm", "CanESM_SoilWater_mm", "GFDL_SoilWater_mm", "Average_SoilWater_mm")
+    # GCM_Proj_SoilWater[(year-2014),1] = max(Results_Access_year$SoilWater)
+    # GCM_Proj_SoilWater[(year-2014),2] = max(Results_bcc_year$SoilWater)
+    # GCM_Proj_SoilWater[(year-2014),3] = max(Results_BNU_year$SoilWater)
+    # GCM_Proj_SoilWater[(year-2014),4] = max(Results_CanESM_year$SoilWater)
+    # GCM_Proj_SoilWater[(year-2014),5] = max(Results_GFDL_year$SoilWater)
+    # GCM_Proj_SoilWater[(year-2015),6] = mean(max(Results_Access_year$SoilWater),max(Results_bcc_year$SoilWater), 
+    #                                          max(Results_BNU_year$SoilWater), max(Results_CanESM_year$SoilWater), 
+    #                                          max(Results_GFDL_year$SoilWater))
+    
+    names(GCM_Proj_SoilWater) = c("Access_SoilWater_mm", "bcc_SoilWater_mm", "BNU_SoilWater_mm", "CanESM_SoilWater_mm", "GFDL_SoilWater_mm", "Average_SoilWater_mm")
+    GCM_Proj_SoilWater[(year-2014),1] = sum(Results_Access_year$SoilWater < 180)
+    GCM_Proj_SoilWater[(year-2014),2] = sum(Results_bcc_year$SoilWater < 180)
+    GCM_Proj_SoilWater[(year-2014),3] = sum(Results_BNU_year$SoilWater < 180)
+    GCM_Proj_SoilWater[(year-2014),4] = sum(Results_CanESM_year$SoilWater < 180)
+    GCM_Proj_SoilWater[(year-2014),5] = sum(Results_GFDL_year$SoilWater < 180)
+    GCM_Proj_SoilWater[(year-2015),6] = mean(sum(Results_Access_year$SoilWater < 180),sum(Results_bcc_year$SoilWater < 180), 
+                                             sum(Results_BNU_year$SoilWater < 180), sum(Results_CanESM_year$SoilWater < 180), 
+                                             sum(Results_GFDL_year$SoilWater < 180))
+    
+    #Step 6c. Will flooding increase in the future?
+    # - Peak annual discharge
+    # - what are the physical / ecological processes that are driving this change?
+    # - note any limitations or assumptions in our the models that might bias these results
     
     names(GCM_Proj_Discharge) = c("Access_Discharge_mm", "bcc_Discharge_mm", "BNU_Discharge_mm", "CanESM_Discharge_mm", "GFDL_Discharge_mm", "Average_Discharge_mm")
     GCM_Proj_Discharge[(year-2014),1] = max(Results_Access_year$modeled_flow)
@@ -204,37 +240,57 @@ GCM_Proj_SoilWater = data.frame(matrix(nrow = (2100-2015), ncol = 6))
                                              max(Results_BNU_year$modeled_flow), max(Results_CanESM_year$modeled_flow), 
                                              max(Results_GFDL_year$modeled_flow))
     
-    names(GCM_Proj_SoilWater) = c("Access_SoilWater_mm", "bcc_SoilWater_mm", "BNU_SoilWater_mm", "CanESM_SoilWater_mm", "GFDL_SoilWater_mm", "Average_SoilWater_mm")
-    GCM_Proj_SoilWater[(year-2014),1] = max(Results_Access_year$SoilWater)
-    GCM_Proj_SoilWater[(year-2014),2] = max(Results_bcc_year$SoilWater)
-    GCM_Proj_SoilWater[(year-2014),3] = max(Results_BNU_year$SoilWater)
-    GCM_Proj_SoilWater[(year-2014),4] = max(Results_CanESM_year$SoilWater)
-    GCM_Proj_SoilWater[(year-2014),5] = max(Results_GFDL_year$SoilWater)
-    GCM_Proj_SoilWater[(year-2015),6] = mean(max(Results_Access_year$SoilWater),max(Results_bcc_year$SoilWater), 
-                                             max(Results_BNU_year$SoilWater), max(Results_CanESM_year$SoilWater), 
-                                             max(Results_GFDL_year$SoilWater))
+    #Step 6d. Do we expect an increase in ET with climate change, [Walter et al 2007]
+    # - Calculate annual ratio of annual ET to annual precipitation
+    # - what are the physical / ecological processes that are driving this change?
+    # - note any limitations or assumptions in our the models that might bias these results
+    
+    names(GCM_Proj_ET) = c("Access_ET_mm", "bcc_ET_mm", "BNU_ET_mm", "CanESM_ET_mm", "GFDL_ET_mm", "Average_ET_mm")
+    GCM_Proj_ET[(year-2014),1] = max(Results_Access_year$ET)/max(snowmelt_Access_year$Precip_mm)
+    GCM_Proj_ET[(year-2014),2] = max(Results_bcc_year$ET)/max(snowmelt_bcc_year$Precip_mm)
+    GCM_Proj_ET[(year-2014),3] = max(Results_BNU_year$ET)/max(snowmelt_BNU_year$Precip_mm)
+    GCM_Proj_ET[(year-2014),4] = max(Results_CanESM_year$ET)/max(snowmelt_CanESM_year$Precip_mm)
+    GCM_Proj_ET[(year-2014),5] = max(Results_GFDL_year$ET)/max(snowmelt_GFDL_year$Precip_mm)
+    GCM_Proj_ET[(year-2015),6] = mean(max(Results_Access_year$ET)/max(snowmelt_Access_year$Precip_mm),
+                                      max(Results_bcc_year$ET)/max(snowmelt_bcc_year$Precip_mm), 
+                                      max(Results_BNU_year$ET)/max(snowmelt_BNU_year$Precip_mm), 
+                                      max(Results_CanESM_year$ET)/max(snowmelt_CanESM_year$Precip_mm), 
+                                      max(Results_GFDL_year$ET)/max(snowmelt_GFDL_year$Precip_mm))
+    
   }
 
-#Step 6a. Will Ithaca still get snow in the future?
-# - use the model to simulate projections of maximum annual SWE accumulation 
-# - what are the physical / ecological processes that are driving this change?
-# - note any limitations or assumptions in our the models that might bias these results
-  
+# Plot SWE
+par(mar=c(2.5,5,1.5,1.5))
+plot(GCM_Proj_SWE[,1], ylab = "SWE (mm)", ylim = c(0,100))
+lines(GCM_Proj_SWE[,2])
+lines(GCM_Proj_SWE[,3])
+lines(GCM_Proj_SWE[,4])
+lines(GCM_Proj_SWE[,5])
+lines(GCM_Proj_SWE[,6], col = "red")
 
-#Step 6b.  Will future droughts be worse for agriculture?
-# - total number of days per year with soil moisture below 180 mm (plant water stress)
-# - what are the physical / ecological processes that are driving this change?
-# - note any limitations or assumptions in our the models that might bias these results
-  
+# Plot Soil Water
+par(mar=c(2.5,5,1.5,1.5))
+plot(GCM_Proj_SoilWater[,1], ylab = "Days of Drought, soil water < 180 (mm)")
+lines(GCM_Proj_SoilWater[,2])
+lines(GCM_Proj_SoilWater[,3])
+lines(GCM_Proj_SoilWater[,4])
+lines(GCM_Proj_SoilWater[,5])
+lines(GCM_Proj_SoilWater[,6], col = "red")
 
-#Step 6c. Will flooding increase in the future?
-# - Peak annual discharge
-# - what are the physical / ecological processes that are driving this change?
-# - note any limitations or assumptions in our the models that might bias these results
-  
-  
-#Step 6d. Do we expect an increase in ET with climate change, [Walter et al 2007]
-# - Calculate annual ratio of annual ET to annual precipitation
-# - what are the physical / ecological processes that are driving this change?
-# - note any limitations or assumptions in our the models that might bias these results
-  
+# Plot Discharge
+par(mar=c(2.5,5,1.5,1.5))
+plot(GCM_Proj_Discharge[,1], ylab = "Discharge (mm)")
+lines(GCM_Proj_Discharge[,2])
+lines(GCM_Proj_Discharge[,3])
+lines(GCM_Proj_Discharge[,4])
+lines(GCM_Proj_Discharge[,5])
+lines(GCM_Proj_Discharge[,6], col = "red")
+
+# Plot ET
+par(mar=c(2.5,5,1.5,1.5))
+plot(GCM_Proj_ET[,1], ylab = "ET/PET")
+lines(GCM_Proj_ET[,2])
+lines(GCM_Proj_ET[,3])
+lines(GCM_Proj_ET[,4])
+lines(GCM_Proj_ET[,5])
+lines(GCM_Proj_ET[,6], col = "red")

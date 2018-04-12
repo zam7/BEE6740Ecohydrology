@@ -16,24 +16,38 @@ MetData$T_mg = MetData$Cin_mgm * MetData$Precip_m
 #Step 2b: Set up the catchment water balance (delta S = Precip - ET - Q)
 # Assume an initial catchment storage of 400 mm
 # Calculate the mass balance through time
-Si_mm = 400 
-MetData$delS_mm = MetData$Precip_mm - MetData$ET_mm - MetData$Q_mm
+MetData$Q_m = MetData$Q_mm/1000
 
+Si_mm = 400 
+Si_m = Si_mm / 1000
 MetData$St_mm[1] = Si_mm # initialize with starting condition
 for (i in 2:length(MetData$Precip_mm))
 {
-  MetData$St_mm[i] = MetData$St_mm[i-1] + MetData$delS_mm[i] 
+  MetData$St_mm[i] = MetData$St_mm[i-1] + MetData$Precip_mm[i] - MetData$ET_mm[i] - MetData$Q_mm[i] 
 }
+
+MetData$St_m = MetData$St_mm/1000
 
 #Step 2c: Set up the tracer mass balance (delta C_mass = C_mass_in - C_mass_Q - C_Mass_ET)
 # Assume ET removes 0 tracer
 # Initial Conditions: average precip concentration is ~ 10 mg / m
 # Assume an initial catchment storage tracer concentration of 26 mg / m
 # Why are we assuming catchment stored concentration is higher than input concentration?
-Ci_mgm = 10
-C_mgm = 26
 
-# Mass balance is: Mass = Mass in storage + delta C_mass
+Ci_mgm = 26
+Ti_mg = C_mgm * Si_m
+
+# initialize with starting condition
+MetData$Ts_mg = Ti_mg 
+MetData$Cs_mgm = MetData$Ts_mg / MetData$St_m
+MetData$Tout_mg = MetData$Q_m * MetData$Cs_mgm
+
+for (i in 2:length(MetData$Precip_mm))
+{
+  MetData$Ts_mg[i] = MetData$Ts_mg[i-1] + (MetData$Precip_m[i]*MetData$Cin_mgm[i]) - MetData$T_out_mg[i-1]  
+  MetData$Cs_mgm[i] = MetData$Ts_mg[i] / MetData$St_m[i]
+  MetData$Tout_mg[i] = MetData$Q_m[i] * MetData$Cs_mgm[i]
+}
 
 
 
