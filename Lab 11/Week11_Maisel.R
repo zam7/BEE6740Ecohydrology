@@ -11,7 +11,7 @@ MetData$Date = as.Date(ISOdate(MetData$Year, MetData$Month, MetData$Day))
 #Step 2a: Compute mass of tracer In (mg)
 # Convert precipitation from mm to m
 MetData$Precip_m = MetData$Precip_mm / 1000
-MetData$T_mg = MetData$Cin_mgm * MetData$Precip_m
+MetData$Tin_obs_mg = MetData$Cin_mgm * MetData$Precip_m
 
 #Step 2b: Set up the catchment water balance (delta S = Precip - ET - Q)
 # Assume an initial catchment storage of 400 mm
@@ -28,6 +28,8 @@ for (i in 2:length(MetData$Precip_mm))
 
 MetData$St_m = MetData$St_mm/1000
 
+plot(MetData$St_mm)
+
 #Step 2c: Set up the tracer mass balance (delta C_mass = C_mass_in - C_mass_Q - C_Mass_ET)
 # Assume ET removes 0 tracer
 # Initial Conditions: average precip concentration is ~ 10 mg / m
@@ -35,31 +37,45 @@ MetData$St_m = MetData$St_mm/1000
 # Why are we assuming catchment stored concentration is higher than input concentration?
 
 Ci_mgm = 26
-Ti_mg = C_mgm * Si_m
+Ti_mg = Ci_mgm * Si_m
 
+# Assume mixing in the catchement
 # initialize with starting condition
 MetData$Ts_mg = Ti_mg 
 MetData$Cs_mgm = MetData$Ts_mg / MetData$St_m
-MetData$Tout_mg = MetData$Q_m * MetData$Cs_mgm
+MetData$Tout_mix_mg = MetData$Q_m * MetData$Cs_mgm
 
 for (i in 2:length(MetData$Precip_mm))
 {
-  MetData$Ts_mg[i] = MetData$Ts_mg[i-1] + (MetData$Precip_m[i]*MetData$Cin_mgm[i]) - MetData$T_out_mg[i-1]  
+  MetData$Ts_mg[i] = MetData$Ts_mg[i-1] + (MetData$Precip_m[i]*MetData$Cin_mgm[i]) - MetData$Tout_mix_mg[i-1]  
   MetData$Cs_mgm[i] = MetData$Ts_mg[i] / MetData$St_m[i]
-  MetData$Tout_mg[i] = MetData$Q_m[i] * MetData$Cs_mgm[i]
+  MetData$Tout_mix_mg[i] = MetData$Q_m[i] * MetData$Cs_mgm[i]
 }
 
+# Assume no mixing, calculate Tout_nomix_mg
+MetData$Tout_nomix_mg = MetData$Q_m * MetData$Cin_mgm
 
+# Convert Tout values into Cout values
+MetData$Cout_mix_mgm = MetData$Tout_mix_mg / MetData$Q_m
+MetData$Cout_nomix_mgm = MetData$Tout_nomix_mg / MetData$Q_m
 
-#Step 3: Compare your simulated catchment tracer to the "observed" do they match?
-#Calculate an NSE
+# Replace all NaN for zero flow with 0
+MetData[is.na(MetData)] <- 0
+
+# Plot the observed vs simulated values for mass and concentration
+plot(MetData$Cout_mgm[1:(5*365)])
+lines(MetData$Cout_mix_mgm[1:(5*365)], col = "red")
+
+plot(MetData$Cout_mgm[1:(5*365)])
+lines(MetData$Cout_nomix_mgm[1:(5*365)], col = "red")
+
 
 #Step 4: Using the water and tracer mass balances, go back and re-estimate the initial catchment storage
 
 #Step 5: Plot Two years of Chloride mass In and Out
 #Compare in and out time series
 #Which signal has more variability? Why?
-
+plot(MetData$Tout_mg[1:(5*365)])
 
 #Step 6: Plot two years of catchment Storage chloride concentration (mg / m) and ET
 # What effect are we seeing here?

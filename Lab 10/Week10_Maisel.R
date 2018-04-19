@@ -36,8 +36,8 @@ latitudeRadians<-latitudeDegrees*pi/180 ## latitude in radians
 # 1994-1995, dry year
 # 2010-2011. wet year
 
-MetData <- MetData[which(MetData$Year > 1993 & MetData$Year < 1996),]
-FC <- get_usgs_gage(flowgage_id = "04234000", begin_date = "1994-01-01", end_date="1995-12-31")
+MetData <- MetData[which(MetData$Year > 2009 & MetData$Year < 2012),]
+FC <- get_usgs_gage(flowgage_id = "04234000", begin_date = "2010-01-01", end_date="2011-12-31")
 FC$flowdata$flow  = FC$flowdata$flow / (FC$area*1000)
 
 #Skip Down to Step 3
@@ -163,6 +163,13 @@ FC$flowdata$flow  = FC$flowdata$flow / (FC$area*1000)
   
 #Step 4: Plot our "globally best" model simulated discharge vs. observed data
 
+  plot(AllData$Date, AllData$flow, col = "red", xlab = "Date", ylab = "Discharge (mm)", pch = 20)
+  lines(AllData$Date, AllData$modeled_flow, pch = 21)
+  legend( x= "topright", 
+          legend=c("Observed Flow","Modeled Flow"), 
+          col=c("red","black"),
+          pch=c(20, 21), cex = 0.5)
+  
 #What were the final parameter values?
 # forest (%), Tp (hours), PETcap (mm/day), Rec Coef (mm/day), Se min (mm), C1, Ia
 

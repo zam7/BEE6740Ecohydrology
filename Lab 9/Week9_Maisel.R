@@ -74,6 +74,8 @@ library(lubridate)
    }
 
    # it is clear from this projection that the ACCESS dataset is an outlier and does not fit the same 
+   par(mfrow=c(2,1))
+   par(mar=c(2.5,5,1.5,1.5))
    plot(GCM_Proj_Precip[,1],xlab="Elapsed Years",ylab="Precip (mm/year)")
    lines(GCM_Proj_Precip[,2])
    lines(GCM_Proj_Precip[,3])
@@ -126,21 +128,21 @@ Results_GFDL <- Lumped_VSA_model(dateSeries = GFDL$Date, P = snowmelt_GFDL$SnowM
 #Qualitatively interpret the  the simulated results from ACCESS1-0_rcp85, what looks right or wrong with the simulated state variables?
    par(mfrow=c(5,1))
    par(mar=c(2.5,5,1.5,1.5))
-   plot(snowmelt_Access$Precip_mm[1:365*10],ylab="Precip (mm)")
-   plot(snowmelt_Access$SnowWaterEq_mm[1:365*10],ylab="SWE (mm)")
-   plot(Results_Access$ET[1:365*10],ylab="ET (mm)")
-   plot(Results_Access$SoilWater[1:365*10],ylab="Soil Water (mm)")
-   plot(Results_Access$modeled_flow[1:365*10],ylab="Discharge (mm)")
+   plot(snowmelt_Access$Precip_mm[1:(365*10)],ylab="Precip (mm)")
+   plot(snowmelt_Access$SnowWaterEq_mm[1:(365*10)],ylab="SWE (mm)")
+   plot(Results_Access$ET[1:(365*10)],ylab="ET (mm)")
+   plot(Results_Access$SoilWater[1:(365*10)],ylab="Soil Water (mm)")
+   plot(Results_Access$modeled_flow[1:(365*10)],ylab="Discharge (mm)")
 
 #Step 5: Now plot GFDL-ESM2G_rcp85
 #Qualitatively interpret these simulated state variables. What can we say about the quality of the two GCMs for our region?
   par(mfrow=c(5,1))
   par(mar=c(2.5,5,1.5,1.5))
-  plot(snowmelt_GFDL$Precip_mm[1:365*10],ylab="Precip (mm)")
-  plot(snowmelt_GFDL$SnowWaterEq_mm[1:365*10],ylab="SWE (mm)")
-  plot(Results_GFDL$ET[1:365*10],ylab="ET (mm)")
-  plot(Results_GFDL$SoilWater[1:365*10],ylab="Soil Water (mm)")
-  plot(Results_GFDL$modeled_flow[1:365*10],ylab="Discharge (mm)")
+  plot(snowmelt_GFDL$Precip_mm[1:(365*10)],ylab="Precip (mm)")
+  plot(snowmelt_GFDL$SnowWaterEq_mm[1:(365*10)],ylab="SWE (mm)")
+  plot(Results_GFDL$ET[1:(365*10)],ylab="ET (mm)")
+  plot(Results_GFDL$SoilWater[1:(365*10)],ylab="Soil Water (mm)")
+  plot(Results_GFDL$modeled_flow[1:(365*10)],ylab="Discharge (mm)")
 
 
 #Step 6: Generate ensemble hydrologic forecasts with GCM / ESM met. projections
@@ -205,16 +207,6 @@ GCM_Proj_ET = data.frame(matrix(nrow = (2100-2015), ncol = 6))
     # - what are the physical / ecological processes that are driving this change?
     # - note any limitations or assumptions in our the models that might bias these results
     
-    # names(GCM_Proj_SoilWater) = c("Access_SoilWater_mm", "bcc_SoilWater_mm", "BNU_SoilWater_mm", "CanESM_SoilWater_mm", "GFDL_SoilWater_mm", "Average_SoilWater_mm")
-    # GCM_Proj_SoilWater[(year-2014),1] = max(Results_Access_year$SoilWater)
-    # GCM_Proj_SoilWater[(year-2014),2] = max(Results_bcc_year$SoilWater)
-    # GCM_Proj_SoilWater[(year-2014),3] = max(Results_BNU_year$SoilWater)
-    # GCM_Proj_SoilWater[(year-2014),4] = max(Results_CanESM_year$SoilWater)
-    # GCM_Proj_SoilWater[(year-2014),5] = max(Results_GFDL_year$SoilWater)
-    # GCM_Proj_SoilWater[(year-2015),6] = mean(max(Results_Access_year$SoilWater),max(Results_bcc_year$SoilWater), 
-    #                                          max(Results_BNU_year$SoilWater), max(Results_CanESM_year$SoilWater), 
-    #                                          max(Results_GFDL_year$SoilWater))
-    
     names(GCM_Proj_SoilWater) = c("Access_SoilWater_mm", "bcc_SoilWater_mm", "BNU_SoilWater_mm", "CanESM_SoilWater_mm", "GFDL_SoilWater_mm", "Average_SoilWater_mm")
     GCM_Proj_SoilWater[(year-2014),1] = sum(Results_Access_year$SoilWater < 180)
     GCM_Proj_SoilWater[(year-2014),2] = sum(Results_bcc_year$SoilWater < 180)
@@ -260,6 +252,7 @@ GCM_Proj_ET = data.frame(matrix(nrow = (2100-2015), ncol = 6))
   }
 
 # Plot SWE
+par(mfrow = c(4,1))
 par(mar=c(2.5,5,1.5,1.5))
 plot(GCM_Proj_SWE[,1], ylab = "SWE (mm)", ylim = c(0,100))
 lines(GCM_Proj_SWE[,2])
