@@ -18,7 +18,7 @@ MetData$Tin_obs_mg = MetData$Cin_mgm * MetData$Precip_m
 # Calculate the mass balance through time
 MetData$Q_m = MetData$Q_mm/1000
 
-Si_mm = 400 
+Si_mm = 370 
 Si_m = Si_mm / 1000
 MetData$St_mm[1] = Si_mm # initialize with starting condition
 for (i in 2:length(MetData$Precip_mm))
@@ -63,22 +63,63 @@ MetData$Cout_nomix_mgm = MetData$Tout_nomix_mg / MetData$Q_m
 MetData[is.na(MetData)] <- 0
 
 # Plot the observed vs simulated values for mass and concentration
-plot(MetData$Cout_mgm[1:(5*365)])
-lines(MetData$Cout_mix_mgm[1:(5*365)], col = "red")
 
-plot(MetData$Cout_mgm[1:(5*365)])
-lines(MetData$Cout_nomix_mgm[1:(5*365)], col = "red")
+# Observed vs simulated values for concentration for mixing and no mixing conditions
+plot(MetData$Date[1:(5*365)], MetData$Cout_mgm[1:(5*365)], main = "Assumed Mixing in Watershed", xlab = "Date (years)", ylab = "Tracer Concentration (mg/m)")
+lines(MetData$Date[1:(5*365)], MetData$Cout_mix_mgm[1:(5*365)], col = "red")
+legend( x= "topright", 
+        legend=c("Observed","Modeled"), 
+        col=c("black","red"),
+        pch=c(20, 21), cex = 0.5)
 
+plot(MetData$Date[1:(5*365)], MetData$Cout_mgm[1:(5*365)], main = "Assumed No Mixing in Watershed", xlab = "Date (years)", ylab = "Tracer Concentration (mg/m)")
+lines(MetData$Date[1:(5*365)], MetData$Cout_nomix_mgm[1:(5*365)], col = "red")
+legend( x= "topright", 
+        legend=c("Observed","Modeled"), 
+        col=c("black","red"),
+        pch=c(20, 21), cex = 0.5)
+
+# Observed vs simulated values for mass for mixing and no mixing conditions
+  # Calculate Tout observed using the Cout and Q
+  MetData$Tout_obs_mg = MetData$Cout_mgm * MetData$Q_m
+
+plot(MetData$Date[1:(5*365)], MetData$Tout_obs_mg[1:(5*365)], main = "Assumed Mixing in Watershed", xlab = "Date (years)", ylab = "Effluent Chloride Mass (mg)")
+lines(MetData$Date[1:(5*365)], MetData$Tout_mix_mg[1:(5*365)], col = "red")
+legend( x= "topright", 
+        legend=c("Observed","Modeled"), 
+        col=c("black","red"),
+        pch=c(20, 21), cex = 0.5)
+
+plot(MetData$Date[1:(5*365)], MetData$Tout_obs_mg[1:(5*365)], main = "Assumed No Mixing in Watershed", xlab = "Date (years)", ylab = "Effluent Chloride Mass (mg)")
+lines(MetData$Date[1:(5*365)], MetData$Tout_nomix_mg[1:(5*365)], col = "red")
+legend( x= "topright", 
+        legend=c("Observed","Modeled"), 
+        col=c("black","red"),
+        pch=c(20, 21), cex = 0.5)
 
 #Step 4: Using the water and tracer mass balances, go back and re-estimate the initial catchment storage
+# The inital guess of 400 mg/m appeared to be too high, so the value was re-estimated to be 370 mg/m
+# Both concentration and mass plots show that the assumed mixing in the watershed condition matched the observed data best,
+# so the mixing condition is used 
 
-#Step 5: Plot Two years of Chloride mass In and Out
+#Step 5: Plot Two years of Chloride mass In and Out # for the mixing condition
 #Compare in and out time series
 #Which signal has more variability? Why?
-plot(MetData$Tout_mg[1:(5*365)])
+plot(MetData$Date[1:(2*365)], MetData$Tin_obs_mg[1:(2*365)], xlab = "Date (years)", ylab = "Influent Chloride Mass (mg)")
+lines(MetData$Date[1:(2*365)], MetData$Tout_mix_mg[1:(2*365)], xlab = "Date (years)", ylab = "Effluent Chloride Mass (mg)", col = "red")
+legend( x= "topright", 
+        legend=c("Observed","Modeled"), 
+        col=c("black","red"),
+        pch=c(20, 21), cex = 0.5)
 
 #Step 6: Plot two years of catchment Storage chloride concentration (mg / m) and ET
 # What effect are we seeing here?
+par(mfrow=c(2,1))
+par(mar=c(4,4,2.5,2.5))
+plot(MetData$Date[1:(2*365)], MetData$Cs_mgm[1:(2*365)], xlab = "Date (years)", ylab = "Influent Chloride Mass (mg/m)")
+plot(MetData$Date[1:(2*365)], MetData$ET_mm[1:(2*365)], xlab = "Date (years)", ylab = "Evapotranspiration (mm)")
+
+# we expect to see that as ET increases, concentration increases because the evaporated water is leaving behind a higher concentration of water
 
 #Are watersheds continuously stirred batch reactors?
 #This was the classic assumption, but is being challenged and now largely rejected
