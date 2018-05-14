@@ -65,13 +65,14 @@ MetData[is.na(MetData)] <- 0
 # Plot the observed vs simulated values for mass and concentration
 
 # Observed vs simulated values for concentration for mixing and no mixing conditions
+par(mfrow=c(2,1))
+par(mar=c(4,4,2.5,2.5))
 plot(MetData$Date[1:(5*365)], MetData$Cout_mgm[1:(5*365)], main = "Assumed Mixing in Watershed", xlab = "Date (years)", ylab = "Tracer Concentration (mg/m)")
 lines(MetData$Date[1:(5*365)], MetData$Cout_mix_mgm[1:(5*365)], col = "red")
 legend( x= "topright", 
         legend=c("Observed","Modeled"), 
         col=c("black","red"),
         pch=c(20, 21), cex = 0.5)
-
 plot(MetData$Date[1:(5*365)], MetData$Cout_mgm[1:(5*365)], main = "Assumed No Mixing in Watershed", xlab = "Date (years)", ylab = "Tracer Concentration (mg/m)")
 lines(MetData$Date[1:(5*365)], MetData$Cout_nomix_mgm[1:(5*365)], col = "red")
 legend( x= "topright", 
@@ -83,6 +84,8 @@ legend( x= "topright",
   # Calculate Tout observed using the Cout and Q
   MetData$Tout_obs_mg = MetData$Cout_mgm * MetData$Q_m
 
+  par(mfrow=c(2,1))
+  par(mar=c(4,4,2.5,2.5))
 plot(MetData$Date[1:(5*365)], MetData$Tout_obs_mg[1:(5*365)], main = "Assumed Mixing in Watershed", xlab = "Date (years)", ylab = "Effluent Chloride Mass (mg)")
 lines(MetData$Date[1:(5*365)], MetData$Tout_mix_mg[1:(5*365)], col = "red")
 legend( x= "topright", 
@@ -105,10 +108,10 @@ legend( x= "topright",
 #Step 5: Plot Two years of Chloride mass In and Out # for the mixing condition
 #Compare in and out time series
 #Which signal has more variability? Why?
-plot(MetData$Date[1:(2*365)], MetData$Tin_obs_mg[1:(2*365)], xlab = "Date (years)", ylab = "Influent Chloride Mass (mg)")
+plot(MetData$Date[1:(2*365)], MetData$Tin_obs_mg[1:(2*365)], xlab = "Date (years)", ylab = "Influent Chloride Mass (mg)", main = "Chlorine Influent and Effluent")
 lines(MetData$Date[1:(2*365)], MetData$Tout_mix_mg[1:(2*365)], xlab = "Date (years)", ylab = "Effluent Chloride Mass (mg)", col = "red")
 legend( x= "topright", 
-        legend=c("Observed","Modeled"), 
+        legend=c("Influent","Effluent"), 
         col=c("black","red"),
         pch=c(20, 21), cex = 0.5)
 
@@ -116,7 +119,7 @@ legend( x= "topright",
 # What effect are we seeing here?
 par(mfrow=c(2,1))
 par(mar=c(4,4,2.5,2.5))
-plot(MetData$Date[1:(2*365)], MetData$Cs_mgm[1:(2*365)], xlab = "Date (years)", ylab = "Influent Chloride Mass (mg/m)")
+plot(MetData$Date[1:(2*365)], MetData$Cs_mgm[1:(2*365)], xlab = "Date (years)", ylab = "Stored Chloride Mass (mg/m)")
 plot(MetData$Date[1:(2*365)], MetData$ET_mm[1:(2*365)], xlab = "Date (years)", ylab = "Evapotranspiration (mm)")
 
 # we expect to see that as ET increases, concentration increases because the evaporated water is leaving behind a higher concentration of water
@@ -124,3 +127,37 @@ plot(MetData$Date[1:(2*365)], MetData$ET_mm[1:(2*365)], xlab = "Date (years)", y
 #Are watersheds continuously stirred batch reactors?
 #This was the classic assumption, but is being challenged and now largely rejected
 #Compare our asumptions to those of McMillan et al (2012)
+
+
+## Graphical representation of different expectations for mixing or nonmixing conditions
+x=seq(0,10,0.1)
+par(mfrow=c(3,1))
+par(mar=c(4,4,2.5,2.5))
+  
+  # Time-delay, no mixing
+  xpfr=x+140
+  plot(1*sin(x), main = "Time-delay, no mixing PFR", ylab = "Concentration", xlab = "")
+  lines(1*sin(xpfr), col = "red")
+  legend( x= "topright",
+          legend=c("Effluent","Influent"), 
+          col=c("black","red"),
+          pch=c(21, 20), cex = 0.5)
+  
+  # Short-circuiting, nonzero storage
+  xsc=x+0.5
+  plot(1*sin(x), main = "Short-circuiting, no mixing", ylab = "Concentration", xlab = "")
+  lines(1*sin(xsc), col = "red")
+  legend( x= "topright",
+          legend=c("Effluent","Influent"), 
+          col=c("black","red"),
+          pch=c(21, 20), cex = 0.5)
+  
+  # Mixing
+  xsc=x+100
+  plot(0.3*sin(x), main = "Mixing, CSTR", ylim = c(-1,1), ylab = "Concentration", xlab = "Time")
+  lines(1*sin(xsc), col = "red")
+  legend( x= "topright",
+          legend=c("Effluent","Influent"), 
+          col=c("black","red"),
+          pch=c(21, 20), cex = 0.5)
+

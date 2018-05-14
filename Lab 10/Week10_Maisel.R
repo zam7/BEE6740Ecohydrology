@@ -36,8 +36,8 @@ latitudeRadians<-latitudeDegrees*pi/180 ## latitude in radians
 # 1994-1995, dry year
 # 2010-2011. wet year
 
-MetData <- MetData[which(MetData$Year > 2009 & MetData$Year < 2012),]
-FC <- get_usgs_gage(flowgage_id = "04234000", begin_date = "2010-01-01", end_date="2011-12-31")
+MetData <- MetData[which(MetData$Year > 2012 & MetData$Year < 2014),]
+FC <- get_usgs_gage(flowgage_id = "04234000", begin_date = "2013-01-01", end_date="2013-12-31")
 FC$flowdata$flow  = FC$flowdata$flow / (FC$area*1000)
 
 #Skip Down to Step 3
