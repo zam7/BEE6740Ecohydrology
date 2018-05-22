@@ -11,7 +11,12 @@ VZ = read.csv('SoilWaterBalance.csv')
 SH = read.csv('ShaleHills_StemXylem_Isotopes.csv')
 
 #Step 1: Plot the local meteoric water line (LMWL)
-plot(VZ$del_O,VZ$del_H) #each dot is a different rain event, the ones low on delO is winter and high is summer
+plot(VZ$del_O, VZ$del_H, xlab = "del 0", ylab = "del H", main = "Water Isotopes")
+abline(lm(VZ$del_H~VZ$del_O), col = "red")
+legend( x= "bottomright", 
+        legend=c("LMWL", "Precipitation"), 
+        col=c("red","black"),
+        pch=c(20, 21), cex = 0.8)
 
 #Give soils some initial isotopic composition for delO and delH
 VZ$del_Soil_O[1] = -10
@@ -98,7 +103,6 @@ legend( x= "bottomright",
         legend=c("LMWL", "Precipitation","AS","QR","QP"), 
         col=c("red","black","green", "plum", "slateblue"),
         pch=c(20, 21, 21, 21, 21), cex = 0.8)
-
 
 #Step 6: Create a new plot, replot the LMWL and Soils
 #Do we see a difference in tree water preference by season?
